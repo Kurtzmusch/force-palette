@@ -35,6 +35,8 @@ for( var rgbString of lowSaturationPalette.rgbStrings ) {
 	lowSaturationPalette.hsvComponents.push(hsvColor)
 }
 
+domUpdates = 0
+
 function RGBToHSV( color ) {
 	var r = color.r/255
 	var g = color.g/255
@@ -89,16 +91,65 @@ function forEachDOMNodeRecursive(startingNode, callback) {
     }
 }
 
+function findClosestLuma(hsvColor, aPalette) {
+	var closestColorIndex = 0
+	var lastLumaDelta = 1.0
+	var hsvPalette = aPalette.hsvComponents
+	// TODO check if there is any performance improvement in caching this result in a color
+	// lookup table
+	for( var index = 0; index < hsvPalette.length; index += 1 ) {
+		var lumaDelta = Math.abs(hsvColor.l-hsvPalette[index].l)
+		if( lumaDelta < lastLumaDelta ) {
+			lastLumaDelta = lumaDelta
+			closestColorIndex = index
+		}
+	}
+	return aPalette.rgbStrings[closestColorIndex]
+}
+
+function findClosestHue(hsvColor, aPalette) {
+	var closestColorIndex = 0
+	var lastHueDelta = 1.0
+	var hsvPalette = aPalette.hsvComponents
+	// TODO check if there is any performance improvement in caching this result in a color
+	// lookup table
+	for( var index = 0; index < hsvPalette.length; index += 1 ) {
+		var hueDelta = Math.abs(hsvColor.h-hsvPalette[index].h)
+		if( hueDelta > 0.5 ) { hueDelta = 1.0-hueDelta } // wrap around since hue is cyclical
+		if( hueDelta < lastHueDelta ) {
+			lastHueDelta = hueDelta
+			closestColorIndex = index
+		}
+	}
+	return aPalette.rgbStrings[closestColorIndex]
+}
+
 function changeColors(currentNode) {
 	if (currentNode.nodeType == 7) { return }
 
 	if(currentNode.style) {
 		var computedStyle = window.getComputedStyle(currentNode)
-		if( computedStyle.color.length && computedStyle.color.startsWith('rgb') && !computedStyle.color.startsWith('rgba') ) {
-			currentNode.style.setProperty('color', 'rgb(0, 0, 0)', 'important')
+		var computedColor = computedStyle.color
+		var computedBackground = computedStyle.backgroundColor
+		if( computedColor.length && computedColor.startsWith('rgb') ) {
+			var decomposedRGB = getDecomposedRGBFromString(computedColor)
+			var decomposedHSV = RGBToHSV(decomposedRGB)
+			if( decomposedHSV.s >= SATURATION_THRESHOLD ) {
+				var replaceColor = findClosestHue(decomposedHSV, palette)
+				currentNode.style.setProperty('color', replaceColor, 'important')
+				domUpdates += 1
+			}
 		}
-		if( computedStyle.backgroundColor.length && computedStyle.backgroundColor.startsWith('rgb') && !computedStyle.backgroundColor.startsWith('rgba') ) {
-			currentNode.style.setProperty('background-color', 'rgb(255, 255, 255)', 'important')
+		if( computedBackground.length && computedBackground.startsWith('rgb') && !computedBackground.startsWith('rgba') ) {
+			var decomposedRGB = getDecomposedRGBFromString(computedBackground)
+			var decomposedHSV = RGBToHSV(decomposedRGB)
+			if( decomposedHSV.s >= SATURATION_THRESHOLD ) {
+				var replaceColor = findClosestHue(decomposedHSV, palette)
+			} else {
+				var replaceColor = findClosestLuma(decomposedHSV, lowSaturationPalette)
+			}
+			currentNode.style.setProperty('background-color', replaceColor, 'important')
+			domUpdates += 1
 		}
 	}
 }
@@ -122,3 +173,6 @@ observer.observe(document.body, {
 console.log('compiled')
 
 forEachDOMNodeRecursive(document.body, changeColors)
+
+console.log('done')
+console.log(domUpdates)
