@@ -1,10 +1,13 @@
 
-const SATURATION_THRESHOLD = 0.5
+const SATURATION_THRESHOLD = 0.666 // any lower uses the lowSatPalette
+const DELTA_LUMA_THRESHOLD = 0.333 // any higher uses the lowSatPalette
 
 var lowSaturationPalette = {
 	rgbStrings: [
 		'rgb(255, 255, 255)',
 		'rgb(63, 63, 63)',
+		'rgb(32, 32, 32)',
+		'rgb(48, 48, 48)',
 		'rgb(242, 242, 242)',
 		'rgb(139, 139, 139)'
 	],
@@ -134,16 +137,20 @@ function changeColors(currentNode) {
 		if( computedColor.length && computedColor.startsWith('rgb') ) {
 			var decomposedRGB = getDecomposedRGBFromString(computedColor)
 			var decomposedHSV = RGBToHSV(decomposedRGB)
-			if( decomposedHSV.s >= SATURATION_THRESHOLD ) {
+			var deltaLuma = Math.abs(decomposedHSV.l-0.5)
+			if( decomposedHSV.s >= SATURATION_THRESHOLD && deltaLuma < DELTA_LUMA_THRESHOLD ) {
 				var replaceColor = findClosestHue(decomposedHSV, palette)
-				currentNode.style.setProperty('color', replaceColor, 'important')
-				domUpdates += 1
+			} else {
+				var replaceColor = findClosestLuma(decomposedHSV, lowSaturationPalette)
 			}
+			currentNode.style.setProperty('color', replaceColor, 'important')
+			domUpdates += 1
 		}
 		if( computedBackground.length && computedBackground.startsWith('rgb') && !computedBackground.startsWith('rgba') ) {
 			var decomposedRGB = getDecomposedRGBFromString(computedBackground)
 			var decomposedHSV = RGBToHSV(decomposedRGB)
-			if( decomposedHSV.s >= SATURATION_THRESHOLD ) {
+			var deltaLuma = Math.abs(decomposedHSV.l-0.5)
+			if( decomposedHSV.s >= SATURATION_THRESHOLD && deltaLuma < DELTA_LUMA_THRESHOLD ) {
 				var replaceColor = findClosestHue(decomposedHSV, palette)
 			} else {
 				var replaceColor = findClosestLuma(decomposedHSV, lowSaturationPalette)
