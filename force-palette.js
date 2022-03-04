@@ -1,5 +1,5 @@
 
-const SATURATION_THRESHOLD = 0.666 // any lower uses the lowSatPalette
+const SATURATION_THRESHOLD = 0.5 // any lower uses the lowSatPalette
 const DELTA_LUMA_THRESHOLD = 0.333 // any higher uses the lowSatPalette
 
 var lowSaturationPalette = {
@@ -134,6 +134,7 @@ function changeColors(currentNode) {
 		var computedStyle = window.getComputedStyle(currentNode)
 		var computedColor = computedStyle.color
 		var computedBackground = computedStyle.backgroundColor
+		var computedBorder = computedStyle.borderColor
 		if( computedColor.length && computedColor.startsWith('rgb') ) {
 			var decomposedRGB = getDecomposedRGBFromString(computedColor)
 			var decomposedHSV = RGBToHSV(decomposedRGB)
@@ -156,6 +157,18 @@ function changeColors(currentNode) {
 				var replaceColor = findClosestLuma(decomposedHSV, lowSaturationPalette)
 			}
 			currentNode.style.setProperty('background-color', replaceColor, 'important')
+			domUpdates += 1
+		}
+		if( computedBorder.length && computedBorder.startsWith('rgb') && !computedBorder.startsWith('rgba') ) {
+			var decomposedRGB = getDecomposedRGBFromString(computedBorder)
+			var decomposedHSV = RGBToHSV(decomposedRGB)
+			var deltaLuma = Math.abs(decomposedHSV.l-0.5)
+			if( decomposedHSV.s >= SATURATION_THRESHOLD && deltaLuma < DELTA_LUMA_THRESHOLD ) {
+				var replaceColor = findClosestHue(decomposedHSV, palette)
+			} else {
+				var replaceColor = findClosestLuma(decomposedHSV, lowSaturationPalette)
+			}
+			currentNode.style.setProperty('border-color', replaceColor, 'important')
 			domUpdates += 1
 		}
 	}
