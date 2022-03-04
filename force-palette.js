@@ -2,30 +2,6 @@
 const SATURATION_THRESHOLD = 0.5 // any lower uses the lowSatPalette
 const DELTA_LUMA_THRESHOLD = 0.333 // any higher uses the lowSatPalette
 
-var lowSaturationPalette = {
-	rgbStrings: [
-		'rgb(255, 255, 255)',
-		'rgb(63, 63, 63)',
-		'rgb(32, 32, 32)',
-		'rgb(48, 48, 48)',
-		'rgb(242, 242, 242)',
-		'rgb(139, 139, 139)'
-	],
-	hsvComponents: []
-}
-
-var palette = {
-	rgbStrings: [
-		'rgb(183, 5, 5)',
-		'rgb(67, 179, 123)',
-		'rgb(221, 119, 0)',
-		'rgb(64, 133, 203)',
-		'rgb(187, 98, 159)',
-		'rgb(0, 166, 173)'
-	],
-	hsvComponents: []
-}
-
 for( var rgbString of palette.rgbStrings ) {
 	var rgbColor = getDecomposedRGBFromString(rgbString)
 	var hsvColor = RGBToHSV(rgbColor)
@@ -131,10 +107,14 @@ function changeColors(currentNode) {
 	if (currentNode.nodeType == 7) { return }
 
 	if(currentNode.style) {
+		// TODO consider writing a generic function for any property if no property-specific
+		// optimisations are possible
+		// FIXME correct logic would be to only skip if alpha = 0, currenyl skips if RGBA
 		var computedStyle = window.getComputedStyle(currentNode)
 		var computedColor = computedStyle.color
 		var computedBackground = computedStyle.backgroundColor
 		var computedBorder = computedStyle.borderColor
+		// TEXT COLOR
 		if( computedColor.length && computedColor.startsWith('rgb') ) {
 			var decomposedRGB = getDecomposedRGBFromString(computedColor)
 			var decomposedHSV = RGBToHSV(decomposedRGB)
@@ -147,6 +127,7 @@ function changeColors(currentNode) {
 			currentNode.style.setProperty('color', replaceColor, 'important')
 			domUpdates += 1
 		}
+		// BACKGROUND COLOR
 		if( computedBackground.length && computedBackground.startsWith('rgb') && !computedBackground.startsWith('rgba') ) {
 			var decomposedRGB = getDecomposedRGBFromString(computedBackground)
 			var decomposedHSV = RGBToHSV(decomposedRGB)
@@ -159,6 +140,7 @@ function changeColors(currentNode) {
 			currentNode.style.setProperty('background-color', replaceColor, 'important')
 			domUpdates += 1
 		}
+		// BORDER COLOR
 		if( computedBorder.length && computedBorder.startsWith('rgb') && !computedBorder.startsWith('rgba') ) {
 			var decomposedRGB = getDecomposedRGBFromString(computedBorder)
 			var decomposedHSV = RGBToHSV(decomposedRGB)
