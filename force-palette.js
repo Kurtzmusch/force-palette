@@ -1,5 +1,5 @@
 
-const SATURATION_THRESHOLD = 0.5 // any lower uses the lowSatPalette
+const SATURATION_THRESHOLD = 0.3 // any lower uses the lowSatPalette
 const DELTA_LUMA_THRESHOLD = 0.333 // any higher uses the lowSatPalette
 
 for( var rgbString of palette.rgbStrings ) {
@@ -111,9 +111,15 @@ function changeColors(currentNode) {
 		// optimisations are possible
 		// FIXME correct logic would be to only skip if alpha = 0, currenyl skips if RGBA
 		var computedStyle = window.getComputedStyle(currentNode)
+		var computedFill = computedStyle.fill
 		var computedColor = computedStyle.color
 		var computedBackground = computedStyle.backgroundColor
 		var computedBorder = computedStyle.borderColor
+		// TODO maybe remove backgorund images, apply css filter or replace with colors
+		/*
+		var computedBackgroundImage = computedStyle.background
+		if( computedBackgroundImage.length && !computedBackgroundImage.startsWith('rgb')) { console.log(computedBackgroundImage) }
+		*/
 		// TEXT COLOR
 		if( computedColor.length && computedColor.startsWith('rgb') ) {
 			var decomposedRGB = getDecomposedRGBFromString(computedColor)
@@ -151,6 +157,19 @@ function changeColors(currentNode) {
 				var replaceColor = findClosestLuma(decomposedHSV, lowSaturationPalette)
 			}
 			currentNode.style.setProperty('border-color', replaceColor, 'important')
+			domUpdates += 1
+		}
+		// SVG FILL COLOR
+		if( computedFill.length && computedFill.startsWith('rgb') ) {
+			var decomposedRGB = getDecomposedRGBFromString(computedFill)
+			var decomposedHSV = RGBToHSV(decomposedRGB)
+			var deltaLuma = Math.abs(decomposedHSV.l-0.5)
+			if( decomposedHSV.s >= SATURATION_THRESHOLD && deltaLuma < DELTA_LUMA_THRESHOLD ) {
+				var replaceColor = findClosestHue(decomposedHSV, palette)
+			} else {
+				var replaceColor = findClosestLuma(decomposedHSV, lowSaturationPalette)
+			}
+			currentNode.style.setProperty('fill', replaceColor, 'important')
 			domUpdates += 1
 		}
 	}
