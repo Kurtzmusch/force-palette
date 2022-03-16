@@ -133,6 +133,7 @@ function changeColors(currentNode) {
 			currentNode.style.setProperty('color', replaceColor, 'important')
 			domUpdates += 1
 		}
+		// TODO if background color is defined in the background attrib, remove the color from it
 		// BACKGROUND COLOR
 		if( computedBackground.length && computedBackground.startsWith('rgb') && !computedBackground.startsWith('rgba') ) {
 			var decomposedRGB = getDecomposedRGBFromString(computedBackground)
@@ -146,6 +147,7 @@ function changeColors(currentNode) {
 			currentNode.style.setProperty('background-color', replaceColor, 'important')
 			domUpdates += 1
 		}
+		// TODO if border color is defined in the border attrib, remove the color from it
 		// BORDER COLOR
 		if( computedBorder.length && computedBorder.startsWith('rgb') && !computedBorder.startsWith('rgba') ) {
 			var decomposedRGB = getDecomposedRGBFromString(computedBorder)
@@ -183,10 +185,20 @@ const observer = new MutationObserver((mutations) => {
         forEachDOMNodeRecursive(newNode, changeColors);
       }
     }
+		// if a class attribute was changed: remove style and recolor the changed element
+		if( mutation.type === 'attributes' ) {
+			if( mutation.attributeName == 'class' ) {
+				var node = mutation.target
+				node.removeAttribute('style')
+				changeColors(node)
+			}
+		}
   });
 });
 
 observer.observe(document.body, {
+	attributes: true,
+	//attributeFilter: ['class'],
   childList: true,
   subtree: true
 });
