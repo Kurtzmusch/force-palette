@@ -1,6 +1,24 @@
-
 const SATURATION_THRESHOLD = 0.3 // any lower uses the lowSatPalette
 const DELTA_LUMA_THRESHOLD = 0.333 // any higher uses the lowSatPalette
+const CSS_COLOR_PROPERTIES = [
+	'background-color',
+	//'background',
+	//'border',
+	//'border-color',
+	'border-bottom-color',
+	'border-left-color',
+	'border-right-color',
+	'border-top-color',
+	//'box-shadow',
+	'caret-color',
+	'color',
+	//'column-rule-color', //so rare and should not even exist
+	//'outline-color',
+	//'text-decoration',
+	'text-decoration-color',
+	'fill'
+	//'text-shadow'
+]
 
 for( var rgbString of palette.rgbStrings ) {
 	var rgbColor = getDecomposedRGBFromString(rgbString)
@@ -103,6 +121,32 @@ function findClosestHue(hsvColor, aPalette) {
 	return aPalette.rgbStrings[closestColorIndex]
 }
 
+function changeColorsNew(currentNode) {
+	if (currentNode.nodeType == 7) { return }
+
+	if(!currentNode.style) { return }
+
+	var computedStyle = window.getComputedStyle(currentNode)
+	for( colorProperty of CSS_COLOR_PROPERTIES ) {
+		var computedProperty = computedStyle[colorProperty]
+		if( computedProperty.length && computedProperty.startsWith('rgb') && !computedProperty.startsWith('rgba') ) {
+			var decomposedRGB = getDecomposedRGBFromString(computedProperty)
+			var decomposedHSV = RGBToHSV(decomposedRGB)
+			var deltaLuma = Math.abs(decomposedHSV.l-0.5)
+			var replaceColor
+			if( decomposedHSV.s >= SATURATION_THRESHOLD && deltaLuma < DELTA_LUMA_THRESHOLD ) {
+				replaceColor = findClosestHue(decomposedHSV, palette)
+			} else {
+				replaceColor = findClosestLuma(decomposedHSV, lowSaturationPalette)
+			}
+			if( replaceColor != computedProperty ) {
+				currentNode.style.setProperty(colorProperty, replaceColor, 'important')
+				domUpdates += 1
+			}
+		}
+	}
+}
+
 function changeColors(currentNode) {
 	if (currentNode.nodeType == 7) { return }
 
@@ -189,8 +233,8 @@ const observer = new MutationObserver((mutations) => {
 		if( mutation.type === 'attributes' ) {
 			if( mutation.attributeName == 'class' ) {
 				var node = mutation.target
-				node.removeAttribute('style')
-				changeColors(node)
+				node.removeAttribute('style') // FIXME CANT REMOVE STYLE WITHOUT LOOSING POSITION
+				changeColorsNew(node)
 			}
 		}
   });
@@ -205,7 +249,7 @@ observer.observe(document.body, {
 
 console.log('compiled')
 
-forEachDOMNodeRecursive(document.body, changeColors)
+forEachDOMNodeRecursive(document.body, changeColorsNew)
 
 console.log('done')
 console.log(domUpdates)
