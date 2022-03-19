@@ -5,11 +5,12 @@
   "version": "1.0",
 
   "description": "forces a color palette on webpages",
-
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["colors.js", "force-palette.js"]
+      "css": ["hide-body.css"],
+      "js": ["colors.js", "force-palette.js"],
+      "run_at": "document_start"
     }
   ]
 

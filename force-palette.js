@@ -10,10 +10,10 @@ const CSS_COLOR_PROPERTIES = [
 	'border-right-color',
 	'border-top-color',
 	//'box-shadow',
-	'caret-color',
+	//'caret-color',
 	'color',
 	//'column-rule-color', //so rare and should not even exist
-	//'outline-color',
+	'outline-color',
 	//'text-decoration',
 	'text-decoration-color',
 	'fill'
@@ -221,35 +221,48 @@ function changeColors(currentNode) {
 	}
 }
 
-const observer = new MutationObserver((mutations) => {
-  mutations.forEach((mutation) => {
-    if (mutation.addedNodes && mutation.addedNodes.length > 0) {
-      for (let i = 0; i < mutation.addedNodes.length; i++) {
-        const newNode = mutation.addedNodes[i];
-        forEachDOMNodeRecursive(newNode, changeColors);
-      }
-    }
-		// if a class attribute was changed: remove style and recolor the changed element
-		if( mutation.type === 'attributes' ) {
-			if( mutation.attributeName == 'class' ) {
-				var node = mutation.target
-				node.removeAttribute('style') // FIXME CANT REMOVE STYLE WITHOUT LOOSING POSITION
-				changeColorsNew(node)
+//document.addEventListener('DOMContentLoaded', onDOMready, false)
+
+document.addEventListener('readystatechange', () => {
+	if( document.readyState == 'complete' ) {
+		console.log('readystate changed to complete')
+		onDOMready()
+	}
+})
+
+function onDOMready() {
+	const observer = new MutationObserver((mutations) => {
+		mutations.forEach((mutation) => {
+			if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+				for (let i = 0; i < mutation.addedNodes.length; i++) {
+					const newNode = mutation.addedNodes[i];
+					forEachDOMNodeRecursive(newNode, changeColors);
+				}
 			}
-		}
-  });
-});
+			// if a class attribute was changed: remove style and recolor the changed element
+			/*
+			if( mutation.type === 'attributes' ) {
+				if( mutation.attributeName == 'class' ) {
+					var node = mutation.target
+					node.removeAttribute('style') // FIXME CANT REMOVE STYLE WITHOUT LOOSING POSITION
+					changeColorsNew(node)
+				}
+			}
+			*/
+		});
+	});
 
-observer.observe(document.body, {
-	attributes: true,
-	//attributeFilter: ['class'],
-  childList: true,
-  subtree: true
-});
-
+	forEachDOMNodeRecursive(document.body, changeColorsNew)
+	observer.observe(document.body, {
+		attributes: true,
+		//attributeFilter: ['class'],
+		childList: true,
+		subtree: true
+	});
+	console.log('done')
+	console.log(domUpdates)
+	document.body.style.setProperty("visibility", "visible", "important")
+}
 console.log('compiled')
 
-forEachDOMNodeRecursive(document.body, changeColorsNew)
 
-console.log('done')
-console.log(domUpdates)
